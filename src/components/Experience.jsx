@@ -1,12 +1,20 @@
 import { OrbitControls } from "@react-three/drei";
 import { Avatar } from "./avatar";
+import { useControls } from "leva";
 
 export const Experience = () => {
+
+  const { animation } = useControls({
+    animation: {
+      value: 'Typing',
+      options: ["Typing", "Standing", "Falling", "FallingToRoll"]
+    },
+  })
   return (
     <>
       <OrbitControls />
       <group position-y={-1}>
-      <Avatar/>
+        <Avatar animation={animation} />
       </group>
       <ambientLight intensity={1} />
 

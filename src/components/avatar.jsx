@@ -4,32 +4,57 @@ Command: npx gltfjsx@6.5.3 public/models/685e570735fff2860290f57d.glb
 */
 
 import React, { useRef, useEffect } from 'react'
-import { useGraph } from '@react-three/fiber'
+import { useGraph, useFrame } from '@react-three/fiber'
 import { useGLTF, useFBX, useAnimations } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
+import { useControls } from 'leva'
+import * as THREE from 'three'
 
 export function Avatar(props) {
+
+  const { animation } = props;
+  const { headFollow, cursorFollow } = useControls({ headFollow: false, cursorFollow: false, });
+
   const group = useRef();
-  const { scene } = useGLTF('models/685e570735fff2860290f57d.glb')
-  const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
-  const { nodes, materials } = useGraph(clone)
+  const { scene } = useGLTF('models/685e570735fff2860290f57d.glb');
+  const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene]);
+  const { nodes, materials } = useGraph(clone);
 
-  const { animations: typingAnimation } = useFBX('animations/Typing.fbx')
+  const { animations: typingAnimation } = useFBX('animations/Typing.fbx');
+  const { animations: standingAnimation } = useFBX('animations/Standing.fbx');
+  const { animations: fallingAnimation } = useFBX('animations/Falling.fbx');
+  const { animations: fallingToRollgAnimation } = useFBX('animations/FallingToRoll.fbx');
 
-  console.log(typingAnimation);
+  typingAnimation[0].name = 'Typing';
+  standingAnimation[0].name = 'Standing';
+  fallingAnimation[0].name = 'Falling';
+  fallingToRollgAnimation[0].name = 'FallingToRoll';
 
-  if (typingAnimation && typingAnimation[0]) typingAnimation[0].name = 'Typing';
 
-  const { actions } = useAnimations(typingAnimation, group);
+  const { actions } = useAnimations([typingAnimation[0], standingAnimation[0], fallingAnimation[0], fallingToRollgAnimation[0]], group);
+
+  useFrame((state) => {
+
+    if (headFollow) {
+      group.current.getObjectByName("Head").lookAt(state.camera.position);
+    }
+    if (cursorFollow) {
+      const target = new THREE.Vector3(state.pointer.x, state.pointer.y, 1);
+      group.current.getObjectByName("Spine2").lookAt(target);
+    }
+  });
 
   useEffect(() => {
-    actions["Typing"]?.reset().play();
-  }, []);
+    actions[animation]?.reset().fadeIn(0.5).play();
+    return () => {
+      actions[animation].reset().fadeOut(0.5).stop();
+    }
+  }, [animation]);
 
   return (
 
     <group {...props} ref={group} dispose={null}>
-      <group rotation-x={-Math.PI / 2} position={[0, -1.5, 0]}>
+      <group rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
         <primitive object={nodes.Hips} />
         <skinnedMesh geometry={nodes.Wolf3D_Body.geometry} material={materials.Wolf3D_Body} skeleton={nodes.Wolf3D_Body.skeleton} />
         <skinnedMesh geometry={nodes.Wolf3D_Outfit_Bottom.geometry} material={materials.Wolf3D_Outfit_Bottom} skeleton={nodes.Wolf3D_Outfit_Bottom.skeleton} />
